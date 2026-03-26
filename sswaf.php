@@ -2,7 +2,7 @@
 /*
 	Plugin Name: SentryOwl Firewall
 	Plugin URI: https://sajbersove.rs
-	Description: Sentry Owl Firewall smart rule-based protection blocks threats and secures your site from attacks.
+	Description: Sentry Owl Firewall is a smart rule-based protection that blocks threats and secures your site from attacks.
 	Tags: firewall, security, waf, protection
 	Author: Sajber Sove
 	Requires at least: 5.0
