@@ -8,8 +8,8 @@
 	Author URI: https://sajbersove.rs
 	Requires at least: 5.0
 	Tested up to: 6.9
-	Stable tag: 1.0.1
-	Version:    1.0.1
+	Stable tag: 1.0.2
+	Version:    1.0.2
 	Requires PHP: 7.4
 	Text Domain: secure-owl-firewall
 	License: GPLv2 or later
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) die();
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-if (!defined('SSWAF_VERSION'))   define('SSWAF_VERSION', '1.0.0');
+if (!defined('SSWAF_VERSION'))   define('SSWAF_VERSION', '1.0.2');
 if (!defined('SSWAF_FILE'))      define('SSWAF_FILE', __FILE__);
 if (!defined('SSWAF_BASE_FILE')) define('SSWAF_BASE_FILE', plugin_basename(__FILE__));
 if (!defined('SSWAF_DIR'))       define('SSWAF_DIR', plugin_dir_path(__FILE__));
@@ -232,6 +232,102 @@ function sswaf_flatten_post($data, $depth = 0) {
 function sswaf_log_dir() {
 	$upload = wp_upload_dir();
 	return $upload['basedir'] . '/secure-owl-firewall/';
+}
+
+// ── IP Whitelist (file-based) ────────────────────────────────────────────────
+
+/**
+ * Path to the whitelist PHP file in uploads directory.
+ */
+function sswaf_whitelist_file() {
+	return sswaf_log_dir() . 'ip-whitelist.php';
+}
+
+/**
+ * Load whitelisted IPs/CIDRs from the PHP file.
+ * Returns an array of strings (IPs or CIDR notations).
+ * Opcache-friendly: the file is a PHP return statement.
+ */
+function sswaf_load_whitelist() {
+	$file = sswaf_whitelist_file();
+	if (!file_exists($file)) return array();
+	$data = @include $file; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- file may not exist yet
+	return is_array($data) ? $data : array();
+}
+
+/**
+ * Save whitelist entries to the PHP file.
+ * Accepts an array of IP addresses and/or CIDR notations.
+ */
+function sswaf_save_whitelist($entries) {
+	$dir = sswaf_log_dir();
+	if (!is_dir($dir)) {
+		wp_mkdir_p($dir);
+	}
+	$content  = "<?php if ( ! defined( 'ABSPATH' ) ) exit;\n";
+	$content .= "return array(\n";
+	foreach ($entries as $entry) {
+		$entry = trim($entry);
+		if ($entry === '') continue;
+		$content .= "\t'" . addslashes($entry) . "',\n";
+	}
+	$content .= ");\n";
+	@file_put_contents(sswaf_whitelist_file(), $content, LOCK_EX); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- writing to uploads dir
+	if (function_exists('opcache_invalidate')) {
+		opcache_invalidate(sswaf_whitelist_file(), true);
+	}
+}
+
+/**
+ * Check if an IP matches an entry (exact IP or CIDR range).
+ */
+function sswaf_ip_match($ip, $entry) {
+	// Exact match
+	if ($ip === $entry) return true;
+	// CIDR match
+	if (strpos($entry, '/') === false) return false;
+	$parts = explode('/', $entry, 2);
+	$subnet = $parts[0];
+	$mask   = isset($parts[1]) ? (int) $parts[1] : 32;
+	// IPv4
+	if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+		if ($mask < 0 || $mask > 32) return false;
+		$ip_long     = ip2long($ip);
+		$subnet_long = ip2long($subnet);
+		$mask_long   = -1 << (32 - $mask);
+		return ($ip_long & $mask_long) === ($subnet_long & $mask_long);
+	}
+	// IPv6
+	if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+		if ($mask < 0 || $mask > 128) return false;
+		$ip_bin     = inet_pton($ip);
+		$subnet_bin = inet_pton($subnet);
+		if ($ip_bin === false || $subnet_bin === false) return false;
+		$mask_bin = str_repeat("\xff", intdiv($mask, 8));
+		if ($mask % 8) {
+			$mask_bin .= chr(0xff << (8 - ($mask % 8)));
+		}
+		$mask_bin = str_pad($mask_bin, 16, "\x00");
+		return ($ip_bin & $mask_bin) === ($subnet_bin & $mask_bin);
+	}
+	return false;
+}
+
+/**
+ * Check if an IP is whitelisted (file + filter hook).
+ */
+function sswaf_is_whitelisted($ip) {
+	// File-based whitelist (opcache-friendly)
+	$file_list = sswaf_load_whitelist();
+	foreach ($file_list as $entry) {
+		if (sswaf_ip_match($ip, $entry)) return true;
+	}
+	// Filter hook (for developers adding IPs programmatically)
+	$hook_list = apply_filters('sswaf_ip_whitelist', array());
+	foreach ($hook_list as $entry) {
+		if (sswaf_ip_match($ip, $entry)) return true;
+	}
+	return false;
 }
 
 function sswaf_init_log_dir() {
@@ -565,8 +661,7 @@ function sswaf_core() {
 
 	// ── Whitelist check ──────────────────────────────────────────────────
 
-	$whitelist = apply_filters('sswaf_ip_whitelist', array());
-	if (!empty($whitelist) && in_array($remote_addr, $whitelist, true)) {
+	if (sswaf_is_whitelisted($remote_addr)) {
 		return;
 	}
 

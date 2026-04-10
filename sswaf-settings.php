@@ -97,9 +97,9 @@ function sswaf_register_settings() {
 
 add_action('admin_init', 'sswaf_handle_actions');
 function sswaf_handle_actions() {
-	
+
 	if (!current_user_can('manage_options')) return;
-	
+
 	// Clear log
 	if (isset($_POST['sswaf_clear_log'])) {
 		check_admin_referer('sswaf_clear_log_action');
@@ -110,7 +110,31 @@ function sswaf_handle_actions() {
 		wp_safe_redirect(add_query_arg(array('page' => 'sswaf-settings', 'cleared' => '1'), admin_url('options-general.php')));
 		exit;
 	}
-	
+
+	// Save IP whitelist
+	if (isset($_POST['sswaf_save_whitelist'])) {
+		check_admin_referer('sswaf_whitelist_action');
+		$raw = isset($_POST['sswaf_ip_whitelist']) ? sanitize_textarea_field(wp_unslash($_POST['sswaf_ip_whitelist'])) : '';
+		$lines = explode("\n", $raw);
+		$valid = array();
+		foreach ($lines as $line) {
+			$entry = trim($line);
+			if ($entry === '') continue;
+			// Validate: plain IP or CIDR notation
+			if (strpos($entry, '/') !== false) {
+				$parts = explode('/', $entry, 2);
+				if (filter_var($parts[0], FILTER_VALIDATE_IP) && is_numeric($parts[1])) {
+					$valid[] = $entry;
+				}
+			} elseif (filter_var($entry, FILTER_VALIDATE_IP)) {
+				$valid[] = $entry;
+			}
+		}
+		sswaf_save_whitelist($valid);
+		wp_safe_redirect(add_query_arg(array('page' => 'sswaf-settings', 'whitelist_saved' => '1'), admin_url('options-general.php')));
+		exit;
+	}
+
 	// Download log (served through PHP — never directly accessible)
 	if (isset($_GET['sswaf_download_log']) && $_GET['sswaf_download_log'] === '1') {
 		if (!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'sswaf_download_log_action')) {
@@ -133,7 +157,7 @@ function sswaf_handle_actions() {
 		wp_safe_redirect(add_query_arg(array('page' => 'sswaf-settings'), admin_url('options-general.php')));
 		exit;
 	}
-	
+
 	// Repair / reinstall MU-Plugin loader
 	if (isset($_POST['sswaf_repair_mu'])) {
 		check_admin_referer('sswaf_repair_mu_action');
@@ -148,23 +172,23 @@ function sswaf_handle_actions() {
 
 add_action('wp_ajax_sswaf_toggle_rule', 'sswaf_ajax_toggle_rule');
 function sswaf_ajax_toggle_rule() {
-	
+
 	if (!current_user_can('manage_options')) {
 		wp_send_json_error('Unauthorized', 403);
 	}
-	
+
 	check_ajax_referer('sswaf_toggle_rule_nonce', 'nonce');
-	
+
 	$rule_id = isset($_POST['rule_id']) ? (int) $_POST['rule_id'] : 0;
 	$action  = isset($_POST['toggle_action']) ? sanitize_text_field(wp_unslash($_POST['toggle_action'])) : '';
-	
+
 	if ($rule_id < 1 || !in_array($action, array('enable', 'disable'), true)) {
 		wp_send_json_error('Invalid request');
 	}
-	
+
 	$disabled = get_option('sswaf_disabled_rules', array());
 	if (!is_array($disabled)) $disabled = array();
-	
+
 	if ($action === 'disable') {
 		if (!in_array($rule_id, $disabled, true)) {
 			$disabled[] = $rule_id;
@@ -172,9 +196,9 @@ function sswaf_ajax_toggle_rule() {
 	} else {
 		$disabled = array_values(array_diff($disabled, array($rule_id)));
 	}
-	
+
 	update_option('sswaf_disabled_rules', $disabled);
-	
+
 	wp_send_json_success(array(
 		'rule_id' => $rule_id,
 		'action'  => $action,
@@ -185,7 +209,7 @@ function sswaf_ajax_toggle_rule() {
 // ── Helper: Get Rule Stats ───────────────────────────────────────────────────
 
 function sswaf_get_rule_stats() {
-	
+
 	$rules_file = apply_filters('sswaf_rules_file', SSWAF_RULES);
 	$stats = array(
 		'file_exists' => false,
@@ -196,36 +220,36 @@ function sswaf_get_rule_stats() {
 		'version'     => '-',
 		'updated'     => '-',
 	);
-	
+
 	if (!file_exists($rules_file) || !is_readable($rules_file)) return $stats;
-	
+
 	$json = file_get_contents($rules_file);
 	$data = json_decode($json, true);
 	if (json_last_error() !== JSON_ERROR_NONE) return $stats;
-	
+
 	$stats['file_exists'] = true;
-	
+
 	if (isset($data['metadata']['version'])) $stats['version'] = $data['metadata']['version'];
 	if (isset($data['metadata']['updated'])) $stats['updated'] = $data['metadata']['updated'];
-	
+
 	$disabled_ids = get_option('sswaf_disabled_rules', array());
 	if (!is_array($disabled_ids)) $disabled_ids = array();
-	
+
 	if (isset($data['rules']) && is_array($data['rules'])) {
 		foreach ($data['rules'] as $rule) {
 			if (!isset($rule['id'])) continue;
 			$stats['total']++;
-			
+
 			$in_json   = isset($rule['enabled']) && $rule['enabled'] === true;
 			$user_off  = in_array($rule['id'], $disabled_ids, true);
 			$effective = $in_json && !$user_off;
-			
+
 			if ($effective) {
 				$stats['enabled']++;
 			} else {
 				$stats['disabled']++;
 			}
-			
+
 			$target = isset($rule['target']) ? $rule['target'] : 'UNKNOWN';
 			if (!isset($stats['by_target'][$target])) {
 				$stats['by_target'][$target] = array('enabled' => 0, 'disabled' => 0);
@@ -237,34 +261,34 @@ function sswaf_get_rule_stats() {
 			}
 		}
 	}
-	
+
 	return $stats;
 }
 
 // ── Helper: Read Recent Log Entries ──────────────────────────────────────────
 
 function sswaf_get_recent_log_entries($count = 50) {
-	
+
 	$log_file = apply_filters('sswaf_log_file', sswaf_get_log_path());
 	$guard = trim(sswaf_get_log_guard());
-	
+
 	if (!file_exists($log_file) || filesize($log_file) === 0) return array();
-	
+
 	// File contains only the die guard — no actual entries
 	$guard_size = strlen(sswaf_get_log_guard());
 	if (filesize($log_file) <= $guard_size) return array();
-	
+
 	// Read file contents using WP_Filesystem-compatible approach
 	$content = file_get_contents($log_file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading local log file
 	if ($content === false) return array();
-	
+
 	$lines = explode("\n", trim($content));
-	
+
 	// Filter out die guard and empty lines
 	$lines = array_filter($lines, function($line) use ($guard) {
 		return $line !== '' && $line !== $guard;
 	});
-	
+
 	$lines = array_slice($lines, -$count);
 	return array_reverse($lines);
 }
@@ -272,9 +296,9 @@ function sswaf_get_recent_log_entries($count = 50) {
 // ── Settings Page Output ─────────────────────────────────────────────────────
 
 function sswaf_settings_page() {
-	
+
 	if (!current_user_can('manage_options')) return;
-	
+
 	$logging_enabled = get_option('sswaf_enable_logging', false);
 	$rule_stats      = sswaf_get_rule_stats();
 	$log_file        = apply_filters('sswaf_log_file', sswaf_get_log_path());
@@ -284,29 +308,34 @@ function sswaf_settings_page() {
 	$cleared         = isset($_GET['cleared']) && $_GET['cleared'] === '1';
 	$mu_installed    = isset($_GET['mu_installed']) && $_GET['mu_installed'] === '1';
 	$mu_failed       = isset($_GET['mu_failed']) && $_GET['mu_failed'] === '1';
+	$whitelist_saved = isset($_GET['whitelist_saved']) && $_GET['whitelist_saved'] === '1';
 	// phpcs:enable WordPress.Security.NonceVerification.Recommended
-	
+
 	?>
 	<div class="wrap">
 		<h1>Secure Owl Firewall</h1>
 		<p>Smart rule-based protection that blocks threats and secures your site from attacks.</p>
-		
+
 		<?php if ($cleared) : ?>
 			<div class="notice notice-success is-dismissible"><p>Log cleared successfully.</p></div>
 		<?php endif; ?>
-		
+
+		<?php if ($whitelist_saved) : ?>
+			<div class="notice notice-success is-dismissible"><p>IP whitelist saved successfully.</p></div>
+		<?php endif; ?>
+
 		<?php if ($mu_installed) : ?>
 			<div class="notice notice-success is-dismissible"><p>MU-Plugin loader installed successfully. The firewall will run at earliest priority on the next request.</p></div>
 		<?php endif; ?>
-		
+
 		<?php if ($mu_failed) : ?>
 			<div class="notice notice-error is-dismissible"><p>Failed to install MU-Plugin loader. Check that <code><?php echo esc_html(WPMU_PLUGIN_DIR); ?></code> is writable.</p></div>
 		<?php endif; ?>
-		
+
 		<?php if (!$rule_stats['file_exists']) : ?>
 			<div class="notice notice-error"><p><strong>Warning:</strong> Rules file not found. The firewall is not active. Expected location: <code><?php echo esc_html(SSWAF_RULES); ?></code></p></div>
 		<?php endif; ?>
-		
+
 		<!-- Rule Stats -->
 		<div class="card" style="max-width:720px;">
 			<h2>Rule Statistics</h2>
@@ -329,9 +358,9 @@ function sswaf_settings_page() {
 				</tbody>
 			</table>
 		</div>
-		
+
 		<br>
-		
+
 		<!-- Settings Form -->
 		<div class="card" style="max-width:720px;">
 			<h2>Settings</h2>
@@ -369,7 +398,7 @@ function sswaf_settings_page() {
 						</td>
 					</tr>
 				</table>
-				
+
 				<div id="sswaf-rate-settings" style="<?php if (!$rate_enabled) echo 'display:none;'; ?> margin-left:10px; padding:12px 16px; border-left:3px solid #2271b1; background:#f6f7f7;">
 					<h4 style="margin-top:0;">IP Rate Limiting</h4>
 					<table class="form-table" role="presentation" style="margin-top:0;">
@@ -392,7 +421,7 @@ function sswaf_settings_page() {
 							</td>
 						</tr>
 					</table>
-					
+
 					<h4>Subnet Rate Limiting</h4>
 					<table class="form-table" role="presentation" style="margin-top:0;">
 						<tr>
@@ -423,23 +452,38 @@ function sswaf_settings_page() {
 						</tr>
 					</table>
 				</div>
-				
+
 				<?php submit_button('Save Settings'); ?>
 			</form>
 		</div>
-		
+
 		<br>
-		
+
+		<!-- IP Whitelist -->
+		<div class="card" style="max-width:720px;">
+			<h2>IP Whitelist</h2>
+			<p>IP addresses and CIDR ranges listed here will bypass all firewall rules and rate limiting.</p>
+			<form method="post">
+				<?php wp_nonce_field('sswaf_whitelist_action'); ?>
+				<?php $wl_entries = sswaf_load_whitelist(); ?>
+				<textarea name="sswaf_ip_whitelist" rows="6" cols="50" style="font-family:monospace; font-size:13px; width:100%; max-width:500px;" placeholder="One entry per line, e.g.&#10;203.0.113.5&#10;10.0.0.0/8&#10;2001:db8::/32"><?php echo esc_textarea(implode("\n", $wl_entries)); ?></textarea>
+				<p class="description">One IP or CIDR range per line. Supports IPv4 and IPv6. Invalid entries are discarded on save. Also available via the <code>sswaf_ip_whitelist</code> filter hook.</p>
+				<?php submit_button('Save Whitelist', 'secondary', 'sswaf_save_whitelist'); ?>
+			</form>
+		</div>
+
+		<br>
+
 		<!-- Rule Management -->
 		<div class="card" style="max-width:960px;">
 			<h2>Rule Management</h2>
 			<p>Toggle individual rules on/off. Changes take effect immediately. Disabled rules are stored separately and survive rule file updates.</p>
-			
+
 			<?php
 			$all_rules   = sswaf_load_all_rules();
 			$disabled_ids = get_option('sswaf_disabled_rules', array());
 			if (!is_array($disabled_ids)) $disabled_ids = array();
-			
+
 			// Collect unique targets for filter
 			$targets = array();
 			foreach ($all_rules as $r) {
@@ -448,7 +492,7 @@ function sswaf_settings_page() {
 			}
 			sort($targets);
 			?>
-			
+
 			<div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
 				<input type="text" id="sswaf-rule-search" placeholder="Search rules (ID, message, tag)..." style="width:300px;">
 				<select id="sswaf-rule-filter-target">
@@ -464,7 +508,7 @@ function sswaf_settings_page() {
 				</select>
 				<span id="sswaf-rule-count" style="color:#646970; font-size:13px;"></span>
 			</div>
-			
+
 			<div style="max-height:500px; overflow-y:auto; border:1px solid #c3c4c7; border-radius:4px;">
 				<table class="widefat striped" id="sswaf-rules-table" style="margin:0;">
 					<thead style="position:sticky; top:0; background:#f0f0f1; z-index:1;">
@@ -489,15 +533,15 @@ function sswaf_settings_page() {
 							$message    = isset($rule['message']) ? $rule['message'] : '';
 							$target     = isset($rule['target']) ? $rule['target'] : '';
 						?>
-						<tr class="sswaf-rule-row" 
-						    data-id="<?php echo intval($rid); ?>" 
-						    data-target="<?php echo esc_attr($target); ?>" 
+						<tr class="sswaf-rule-row"
+						    data-id="<?php echo intval($rid); ?>"
+						    data-target="<?php echo esc_attr($target); ?>"
 						    data-status="<?php echo $effective ? 'enabled' : 'disabled'; ?>"
 						    data-search="<?php echo esc_attr($rid . ' ' . strtolower($message . ' ' . $tags_str . ' ' . $target)); ?>"
 						    style="<?php if (!$effective) echo 'opacity:0.6;'; ?>">
 							<td>
 								<?php if ($can_toggle) : ?>
-									<button type="button" 
+									<button type="button"
 									        class="sswaf-toggle button button-small"
 									        data-rule-id="<?php echo intval($rid); ?>"
 									        data-action="<?php echo $effective ? 'disable' : 'enable'; ?>"
@@ -524,7 +568,7 @@ function sswaf_settings_page() {
 					</tbody>
 				</table>
 			</div>
-			
+
 			<?php if (!empty($disabled_ids)) : ?>
 				<p style="margin-top:10px; color:#646970;">
 					<strong><?php echo intval(count($disabled_ids)); ?></strong> rule(s) disabled by user:
@@ -532,13 +576,13 @@ function sswaf_settings_page() {
 				</p>
 			<?php endif; ?>
 		</div>
-		
+
 		<br>
-		
+
 		<!-- Log Viewer -->
 		<div class="card" style="max-width:720px;">
 			<h2>Firewall Log</h2>
-			
+
 			<?php if (!$logging_enabled) : ?>
 				<p>Logging is currently disabled. Enable it above to start recording blocked requests.</p>
 			<?php else : ?>
@@ -548,7 +592,7 @@ function sswaf_settings_page() {
 						&nbsp;&mdash;&nbsp;showing last <?php echo intval(count($log_entries)); ?> entries (newest first)
 					<?php endif; ?>
 				</p>
-				
+
 				<div style="display:flex; gap:8px; margin-bottom:12px;">
 					<?php if ($log_size > 0) : ?>
 						<form method="post" style="display:inline;">
@@ -564,7 +608,7 @@ function sswaf_settings_page() {
 						<a href="<?php echo esc_url($download_url); ?>" class="button">Download Log</a>
 					<?php endif; ?>
 				</div>
-				
+
 				<?php if (!empty($log_entries)) : ?>
 					<?php $allowed_log_html = array('span' => array('style' => array())); ?>
 					<div style="max-height:420px; overflow-y:auto; background:#1d2327; padding:10px 14px; border-radius:4px;">
@@ -582,12 +626,12 @@ function sswaf_settings_page() {
 				<?php elseif ($log_size === 0) : ?>
 					<p><em>No entries yet. Blocked requests will appear here.</em></p>
 				<?php endif; ?>
-				
+
 			<?php endif; ?>
 		</div>
-		
+
 		<br>
-		
+
 		<!-- Plugin Info -->
 		<div class="card" style="max-width:720px;">
 			<h2>Plugin Info</h2>
@@ -637,11 +681,24 @@ function sswaf_settings_page() {
 							echo 'Disabled';
 						}
 					?></td></tr>
-					<tr><td><strong>IP whitelist</strong></td><td><?php $wl = apply_filters('sswaf_ip_whitelist', array()); echo !empty($wl) ? count($wl) . ' IPs whitelisted' : 'None'; ?></td></tr>
+					<tr><td><strong>IP whitelist</strong></td><td><?php
+						$wl_file = sswaf_load_whitelist();
+						$wl_hook = apply_filters('sswaf_ip_whitelist', array());
+						$wl_total = count($wl_file) + count($wl_hook);
+						if ($wl_total > 0) {
+							echo intval($wl_total) . ' entry(s)';
+							$parts = array();
+							if (!empty($wl_file)) $parts[] = intval(count($wl_file)) . ' from settings';
+							if (!empty($wl_hook)) $parts[] = intval(count($wl_hook)) . ' from filter hook';
+							echo ' (' . esc_html(implode(', ', $parts)) . ')';
+						} else {
+							echo 'None';
+						}
+					?></td></tr>
 				</tbody>
 			</table>
 		</div>
-		
+
 	</div>
 	<?php
 }

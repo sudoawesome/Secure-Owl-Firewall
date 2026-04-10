@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -20,8 +20,9 @@ Key features:
 * Six inspection targets — REQUEST_URI, QUERY_STRING, USER_AGENT, REFERER, COOKIE, POST
 * MU-Plugin loader — runs before any regular plugin for earliest protection
 * Rate limiting — optional transient-based IP and subnet banning
+* IP whitelist with CIDR/subnet support (IPv4 + IPv6)
 * Per-rule toggle — disable individual rules from the admin panel without editing files
-* File-based logging — 64MB cap with auto-rotation, protected log storage
+* File-based logging — 24MB cap with auto-rotation, protected log storage
 * Filterable — extensive filter hooks for customization
 
 == Installation ==
@@ -53,3 +54,8 @@ Key features:
 = 1.0.1 =
 * Updated security rules.
 * Updated log file cap to 24MB.
+
+= 1.0.2 =
+* Added IP whitelist with CIDR/subnet support (IPv4 + IPv6)
+* File-based storage for zero database overhead
+* Settings UI with validation
