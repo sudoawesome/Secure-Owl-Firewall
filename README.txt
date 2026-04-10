@@ -26,7 +26,7 @@ Key features:
 
 == Installation ==
 
-1. Upload the `sswaf` folder to `/wp-content/plugins/`
+1. Upload the `secure-owl-firewall` folder to `/wp-content/plugins/`
 2. Activate through the Plugins menu
 3. The MU-Plugin loader is installed automatically for early execution
 4. Configure settings under Settings > Secure Owl Firewall
