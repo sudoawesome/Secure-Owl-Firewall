@@ -548,8 +548,8 @@ function sswaf_settings_page() {
 									<span style="color:#646970; font-size:12px;">Off (JSON)</span>
 								<?php endif; ?>
 							</td>
-							<td><code><?php echo intval($rid); ?></code></td>
-							<td><code style="font-size:11px;"><?php echo esc_html($target); ?></code></td>
+							<td><code style="word-break: normal;"><?php echo intval($rid); ?></code></td>
+							<td><code style="font-size:11px; word-break: normal;"><?php echo esc_html($target); ?></code></td>
 							<td>
 								<?php
 								$sev_colors = array(1 => '#dc3232', 2 => '#d63638', 3 => '#dba617', 4 => '#72aee6', 5 => '#a7aaad');

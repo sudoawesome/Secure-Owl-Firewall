@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -49,13 +49,17 @@ Key features:
 == Changelog ==
 
 = 1.0.0 =
-* Initial release
+* Initial release.
 
 = 1.0.1 =
 * Updated security rules.
 * Updated log file cap to 24MB.
 
 = 1.0.2 =
-* Added IP whitelist with CIDR/subnet support (IPv4 + IPv6)
-* File-based storage for zero database overhead
-* Settings UI with validation
+* Added IP whitelist with CIDR/subnet support (IPv4 + IPv6).
+* File-based storage for zero database overhead.
+* Settings UI with validation.
+
+= 1.0.3 =
+* Removed metadata from a JSON rules file.
+* Small CSS admin tweak.
