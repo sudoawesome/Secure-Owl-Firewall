@@ -342,10 +342,6 @@ function sswaf_settings_page() {
 			<table class="widefat striped" style="max-width:680px;">
 				<tbody>
 					<tr>
-						<td><strong>Ruleset version</strong></td>
-						<td><?php echo esc_html($rule_stats['version']); ?> (<?php echo esc_html($rule_stats['updated']); ?>)</td>
-					</tr>
-					<tr>
 						<td><strong>Total rules</strong></td>
 						<td><?php echo (int) $rule_stats['total']; ?> (<?php echo (int) $rule_stats['enabled']; ?> enabled, <?php echo (int) $rule_stats['disabled']; ?> disabled)</td>
 					</tr>
@@ -475,7 +471,7 @@ function sswaf_settings_page() {
 		<br>
 
 		<!-- Rule Management -->
-		<div class="card" style="max-width:960px;">
+		<div class="card" style="max-width:720px;">
 			<h2>Rule Management</h2>
 			<p>Toggle individual rules on/off. Changes take effect immediately. Disabled rules are stored separately and survive rule file updates.</p>
 
