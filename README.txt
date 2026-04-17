@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -15,15 +15,17 @@ Secure Owl Firewall is a fast, lightweight firewall plugin with an advanced rule
 
 Key features:
 
-* JSON-based rules — 100+ default rules covering SQLi, XSS, RCE, LFI, SSRF, Log4Shell, and more
-* Transformation pipeline — urlDecode, lowercase, normalizePath, removeWhitespace, htmlEntityDecode, trim
-* Six inspection targets — REQUEST_URI, QUERY_STRING, USER_AGENT, REFERER, COOKIE, POST
-* MU-Plugin loader — runs before any regular plugin for earliest protection
-* Rate limiting — optional transient-based IP and subnet banning
-* IP whitelist with CIDR/subnet support (IPv4 + IPv6)
-* Per-rule toggle — disable individual rules from the admin panel without editing files
-* File-based logging — 24MB cap with auto-rotation, protected log storage
-* Filterable — extensive filter hooks for customization
+* JSON-based rules — 100+ default rules covering SQLi, XSS, RCE, LFI, SSRF, Log4Shell, and more.
+* Transformation pipeline — urlDecode, lowercase, normalizePath, removeWhitespace, htmlEntityDecode, trim.
+* Six inspection targets — REQUEST_URI, QUERY_STRING, USER_AGENT, REFERER, COOKIE, POST.
+* MU-Plugin loader — runs before any regular plugin for earliest protection.
+* Rate limiting — optional transient-based IP and subnet banning.
+* IP whitelist with CIDR/subnet support (IPv4 + IPv6).
+* Per-rule toggle — disable individual rules from the admin panel without editing files.
+* File-based logging — 24MB cap with auto-rotation, protected log storage.
+* Configurable log retention policy for GDPR compliance.
+* Anonymize user IP addresses, enhancing privacy and GDPR compliance.
+* Filterable — extensive filter hooks for customization.
 
 == Installation ==
 
@@ -63,3 +65,9 @@ Key features:
 = 1.0.3 =
 * Removed metadata from a JSON rules file.
 * Small CSS admin tweak.
+
+= 1.0.4 =
+* Added configurable log retention policy to automatically purge old data for GDPR compliance.
+* Added option to anonymize user IP addresses, enhancing privacy and GDPR compliance.
+* Rework plugin update mechanism.
+* Improved coding standards to align better with WordPress guidelines.

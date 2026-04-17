@@ -15,6 +15,7 @@ nohup.out
 *.tmp
 *.orig
 *.rej
+*.md
 
 # Local shell / REPL / history junk
 .history
@@ -159,6 +160,7 @@ known_hosts
 # IDE / Editor config
 .vscode/
 .idea/
+.agents/
 *.sublime-project
 *.sublime-workspace
 .project

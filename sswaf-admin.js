@@ -2,14 +2,14 @@
  * Secure Owl Firewall - Admin Settings JS
  * Handles rate limiting toggle, rule filtering, and AJAX rule toggling.
  */
-(function() {
+(function () {
 	'use strict';
 
 	// Rate limiting settings toggle
 	var rateToggle = document.getElementById('sswaf-rate-toggle');
 	var rateSettings = document.getElementById('sswaf-rate-settings');
 	if (rateToggle && rateSettings) {
-		rateToggle.addEventListener('change', function() {
+		rateToggle.addEventListener('change', function () {
 			rateSettings.style.display = this.checked ? '' : 'none';
 		});
 	}
@@ -17,8 +17,8 @@
 	// Rule toggle handler (AJAX)
 	var toggleButtons = document.querySelectorAll('.sswaf-toggle');
 	if (toggleButtons.length && typeof sswaf_admin !== 'undefined') {
-		toggleButtons.forEach(function(btn) {
-			btn.addEventListener('click', function() {
+		toggleButtons.forEach(function (btn) {
+			btn.addEventListener('click', function () {
 				var button = this;
 				var ruleId = button.getAttribute('data-rule-id');
 				var action = button.getAttribute('data-action');
@@ -34,8 +34,8 @@
 				formData.append('toggle_action', action);
 
 				fetch(sswaf_admin.ajax_url, { method: 'POST', body: formData })
-					.then(function(r) { return r.json(); })
-					.then(function(resp) {
+					.then(function (r) { return r.json(); })
+					.then(function (resp) {
 						if (resp.success) {
 							var isOn = (action === 'enable');
 							button.innerHTML = isOn ? '&#10003; On' : '&#10007; Off';
@@ -49,7 +49,7 @@
 						}
 						button.disabled = false;
 					})
-					.catch(function() {
+					.catch(function () {
 						button.textContent = 'Error';
 						button.disabled = false;
 					});
@@ -68,7 +68,7 @@
 		var status = filterStatus.value;
 		var rows = document.querySelectorAll('.sswaf-rule-row');
 
-		rows.forEach(function(row) {
+		rows.forEach(function (row) {
 			var matchSearch = !search || row.getAttribute('data-search').indexOf(search) !== -1;
 			var matchTarget = !target || row.getAttribute('data-target') === target;
 			var matchStatus = !status || row.getAttribute('data-status') === status;
