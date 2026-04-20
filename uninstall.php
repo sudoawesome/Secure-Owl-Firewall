@@ -25,6 +25,7 @@ delete_option( 'sswaf_log_retention' );
 delete_option( 'sswaf_version' );
 delete_option( 'sswaf_login_pin_enabled' );
 delete_option( 'sswaf_login_pin' );
+delete_option( 'sswaf_honeypot_enabled' );
 
 // Clear scheduled cron actions
 wp_clear_scheduled_hook( 'sswaf_daily_log_cleanup' );

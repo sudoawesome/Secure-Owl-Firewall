@@ -8,8 +8,8 @@
 	Author URI: https://sajbersove.rs
 	Requires at least: 5.0
 	Tested up to: 6.9
-	Stable tag: 1.0.5
-	Version:    1.0.5
+	Stable tag: 1.0.6
+	Version:    1.0.6
 	Requires PHP: 7.4
 	Text Domain: secure-owl-firewall
 	License: GPLv2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 if ( ! defined( 'SSWAF_VERSION' ) ) {
-	define( 'SSWAF_VERSION', '1.0.5' );
+	define( 'SSWAF_VERSION', '1.0.6' );
 }
 
 if ( ! defined( 'SSWAF_FILE' ) ) {
@@ -73,7 +73,7 @@ function sswaf_t_url_decode( $input ) {
 function sswaf_t_trim( $input ) {
 	return trim( $input );
 }
-   
+
 function sswaf_t_normalize_path( $input ) {
 	// Remove redundant slashes
 	$input = preg_replace( '#/{2,}#', '/', $input );
@@ -1001,6 +1001,51 @@ function sswaf_login_pin_check( $user, $username, $password ) {
 	return $user;
 }
 
+// ── Login Honeypot ───────────────────────────────────────────────────────────
+add_action( 'login_form', 'sswaf_login_honeypot_form' );
+add_filter( 'authenticate', 'sswaf_login_honeypot_check', 30, 3 );
+
+function sswaf_login_honeypot_form() {
+	if ( ! get_option( 'sswaf_honeypot_enabled' ) ) {
+		return;
+	}
+	// Off-screen hidden bait field. Bots auto-filling all fields fall into it; humans never see it.
+	// Field name "url" is a classic honeypot target for spam/login bots.
+	echo '<div style="position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; overflow:hidden;" aria-hidden="true">';
+	echo '<label for="sswaf_hp_url">' . esc_html__( 'Leave this field blank', 'secure-owl-firewall' ) . '</label>';
+	echo '<input type="text" name="url" id="sswaf_hp_url" value="" autocomplete="off" tabindex="-1" />';
+	echo '</div>';
+}
+
+function sswaf_login_honeypot_check( $user, $username, $password ) {
+	if ( ! get_option( 'sswaf_honeypot_enabled' ) ) {
+		return $user;
+	}
+	// Only applies to standard login form — not REST API, XML-RPC, or application passwords.
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	if ( ! isset( $_POST['log'] ) && ! isset( $_POST['user_login'] ) ) {
+		return $user;
+	}
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	$bait = isset( $_POST['url'] ) ? sanitize_text_field( wp_unslash( $_POST['url'] ) ) : '';
+	if ( '' !== $bait ) {
+		$remote_addr = sswaf_get_remote_addr();
+		$pseudo_rule = array(
+			'id'       => 9002,
+			'severity' => 2,
+			'message'  => 'Honeypot triggered — automated bot',
+		);
+		sswaf_log( $pseudo_rule, '(honeypot filled)', 'LOGIN', $remote_addr );
+		sswaf_rate_limit_record( $remote_addr, $pseudo_rule );
+		return new WP_Error(
+			'incorrect_password',
+			// translators: Link to the lost-password page.
+			sprintf( __( '<strong>Error:</strong> The username or password you entered is incorrect. <a href="%s">Lost your password?</a>', 'secure-owl-firewall' ), esc_url( wp_lostpassword_url() ) )
+		);
+	}
+	return $user;
+}
+
 // ── MU-Plugin Loader Management ──────────────────────────────────────────────
 function sswaf_get_mu_loader_content() {
 
@@ -1074,10 +1119,11 @@ function sswaf_activate() {
 		add_option( 'sswaf_disabled_rules', array() );
 	}
 
-	// Login PIN defaults (disabled, no PIN set)
+	// Login Security defaults (PIN + honeypot both disabled by default)
 	if ( get_option( 'sswaf_login_pin_enabled' ) === false ) {
 		add_option( 'sswaf_login_pin_enabled', false );
 		add_option( 'sswaf_login_pin', '' );
+		add_option( 'sswaf_honeypot_enabled', false );
 	}
 
 	// Rate limiting defaults (module off by default)

@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -20,9 +20,10 @@ Key features:
 * Six inspection targets — REQUEST_URI, QUERY_STRING, USER_AGENT, REFERER, COOKIE, POST.
 * MU-Plugin loader — runs before any regular plugin for earliest protection.
 * Rate limiting — optional transient-based IP and subnet banning.
+* Secure the login page with PIN protection and a honeypot field to block brute-force attacks.
 * IP whitelist with CIDR/subnet support (IPv4 + IPv6).
 * Per-rule toggle — disable individual rules from the admin panel without editing files.
-* File-based logging — 24MB cap with auto-rotation, protected log storage.
+* File-based logging — 64MB cap with auto-rotation, protected log storage.
 * Configurable log retention policy for GDPR compliance.
 * Anonymize user IP addresses, enhancing privacy and GDPR compliance.
 * Filterable — extensive filter hooks for customization.
@@ -77,4 +78,5 @@ Key features:
 * Fixed a small bug in admin panel log viewer.
 
 = 1.0.6 =
-* Added a numeric PIN field with rate-limiting to the login page to prevent brute-force attacks.
+* Added rate-limited PIN authentication to the login page to mitigate brute-force attacks.
+* Added a honeypot trap to the login form to catch unsophisticated bots.
