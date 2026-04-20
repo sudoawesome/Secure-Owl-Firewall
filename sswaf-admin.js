@@ -14,6 +14,16 @@
 		});
 	}
 
+	// Login PIN new-PIN field toggle
+	var pinToggle = document.getElementById('sswaf-pin-toggle');
+	var pinSettings = document.getElementById('sswaf-pin-settings');
+	if (pinToggle && pinSettings) {
+		pinSettings.style.display = pinToggle.checked ? '' : 'none';
+		pinToggle.addEventListener('change', function () {
+			pinSettings.style.display = this.checked ? '' : 'none';
+		});
+	}
+
 	// Rule toggle handler (AJAX)
 	var toggleButtons = document.querySelectorAll('.sswaf-toggle');
 	if (toggleButtons.length && typeof sswaf_admin !== 'undefined') {

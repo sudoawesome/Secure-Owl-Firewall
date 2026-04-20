@@ -75,3 +75,6 @@ Key features:
 = 1.0.5 =
 * Updated log file cap to 64MB.
 * Fixed a small bug in admin panel log viewer.
+
+= 1.0.6 =
+* Added a numeric PIN field with rate-limiting to the login page to prevent brute-force attacks.

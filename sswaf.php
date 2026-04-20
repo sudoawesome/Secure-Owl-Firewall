@@ -73,7 +73,7 @@ function sswaf_t_url_decode( $input ) {
 function sswaf_t_trim( $input ) {
 	return trim( $input );
 }
-
+   
 function sswaf_t_normalize_path( $input ) {
 	// Remove redundant slashes
 	$input = preg_replace( '#/{2,}#', '/', $input );
@@ -951,6 +951,56 @@ if ( is_admin() ) {
 	}
 }
 
+// ── Login PIN ────────────────────────────────────────────────────────────────
+add_action( 'login_form', 'sswaf_login_pin_form' );
+add_filter( 'authenticate', 'sswaf_login_pin_check', 31, 3 );
+
+function sswaf_login_pin_form() {
+	if ( ! get_option( 'sswaf_login_pin_enabled' ) ) {
+		return;
+	}
+	if ( ! get_option( 'sswaf_login_pin' ) ) {
+		return;
+	}
+	echo '<p class="login-username">';
+	echo '<label for="sswaf_pin">' . esc_html__( 'Security PIN', 'secure-owl-firewall' ) . '</label>';
+	echo '<input type="password" name="sswaf_pin" id="sswaf_pin" class="input" value="" size="20" autocomplete="off" />';
+	echo '</p>';
+}
+
+function sswaf_login_pin_check( $user, $username, $password ) {
+	if ( ! get_option( 'sswaf_login_pin_enabled' ) ) {
+		return $user;
+	}
+	$stored_hash = get_option( 'sswaf_login_pin', '' );
+	if ( empty( $stored_hash ) ) {
+		return $user;
+	}
+	// Only applies to standard login form — not REST API, XML-RPC, or application passwords.
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	if ( ! isset( $_POST['log'] ) && ! isset( $_POST['user_login'] ) ) {
+		return $user;
+	}
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	$submitted = isset( $_POST['sswaf_pin'] ) ? sanitize_text_field( wp_unslash( $_POST['sswaf_pin'] ) ) : '';
+	if ( empty( $submitted ) || ! wp_check_password( $submitted, $stored_hash ) ) {
+		$remote_addr = sswaf_get_remote_addr();
+		$pseudo_rule  = array(
+			'id'       => 9001,
+			'severity' => 2,
+			'message'  => 'Invalid login PIN',
+		);
+		sswaf_log( $pseudo_rule, '(invalid pin)', 'LOGIN', $remote_addr );
+		sswaf_rate_limit_record( $remote_addr, $pseudo_rule );
+		return new WP_Error(
+			'incorrect_password',
+			// translators: Link to the lost-password page.
+			sprintf( __( '<strong>Error:</strong> The username or password you entered is incorrect. <a href="%s">Lost your password?</a>', 'secure-owl-firewall' ), esc_url( wp_lostpassword_url() ) )
+		);
+	}
+	return $user;
+}
+
 // ── MU-Plugin Loader Management ──────────────────────────────────────────────
 function sswaf_get_mu_loader_content() {
 
@@ -1022,6 +1072,12 @@ function sswaf_activate() {
 
 	if ( get_option( 'sswaf_disabled_rules' ) === false ) {
 		add_option( 'sswaf_disabled_rules', array() );
+	}
+
+	// Login PIN defaults (disabled, no PIN set)
+	if ( get_option( 'sswaf_login_pin_enabled' ) === false ) {
+		add_option( 'sswaf_login_pin_enabled', false );
+		add_option( 'sswaf_login_pin', '' );
 	}
 
 	// Rate limiting defaults (module off by default)

@@ -195,6 +195,55 @@ function sswaf_handle_actions() {
 	}
 }
 
+// ── Login PIN Handler ────────────────────────────────────────────────────────
+add_action( 'admin_init', 'sswaf_handle_pin_save' );
+function sswaf_handle_pin_save() {
+
+	if ( ! isset( $_POST['sswaf_pin_nonce'] ) ) {
+		return;
+	}
+
+	if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['sswaf_pin_nonce'] ) ), 'sswaf_pin_action' ) ) {
+		wp_die( 'Security check failed.' );
+	}
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Insufficient permissions.' );
+	}
+
+	$enabled = isset( $_POST['sswaf_login_pin_enabled'] );
+	update_option( 'sswaf_login_pin_enabled', $enabled );
+
+	// Remove PIN if requested
+	if ( isset( $_POST['sswaf_remove_pin'] ) ) {
+		update_option( 'sswaf_login_pin', '' );
+		wp_safe_redirect( add_query_arg( array(
+			'page' => 'sswaf-settings',
+			'pin_saved' => '1',
+		), admin_url( 'options-general.php' ) ) );
+		exit;
+	}
+
+	$new_pin = isset( $_POST['sswaf_pin_new'] ) ? sanitize_text_field( wp_unslash( $_POST['sswaf_pin_new'] ) ) : '';
+
+	if ( '' !== $new_pin ) {
+		if ( ! preg_match( '/^\d{4,20}$/', $new_pin ) ) {
+			wp_safe_redirect( add_query_arg( array(
+				'page' => 'sswaf-settings',
+				'pin_error' => '1',
+			), admin_url( 'options-general.php' ) ) );
+			exit;
+		}
+		update_option( 'sswaf_login_pin', wp_hash_password( $new_pin ) );
+	}
+
+	wp_safe_redirect( add_query_arg( array(
+		'page' => 'sswaf-settings',
+		'pin_saved' => '1',
+	), admin_url( 'options-general.php' ) ) );
+	exit;
+}
+
 // ── AJAX: Rule Toggle ────────────────────────────────────────────────────────
 add_action( 'wp_ajax_sswaf_toggle_rule', 'sswaf_ajax_toggle_rule' );
 function sswaf_ajax_toggle_rule() {
@@ -373,6 +422,8 @@ function sswaf_settings_page() {
 	$mu_installed = isset( $_GET['mu_installed'] ) && '1' === $_GET['mu_installed'];
 	$mu_failed = isset( $_GET['mu_failed'] ) && '1' === $_GET['mu_failed'];
 	$whitelist_saved = isset( $_GET['whitelist_saved'] ) && '1' === $_GET['whitelist_saved'];
+	$pin_saved = isset( $_GET['pin_saved'] ) && '1' === $_GET['pin_saved'];
+	$pin_error = isset( $_GET['pin_error'] ) && '1' === $_GET['pin_error'];
 	// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 	?>
@@ -403,6 +454,24 @@ function sswaf_settings_page() {
 		if ( $mu_installed ) : ?>
 			<div class="notice notice-success is-dismissible">
 				<p>MU-Plugin loader installed successfully. The firewall will run at earliest priority on the next request.</p>
+			</div>
+			<?php
+		endif; ?>
+
+		<?php
+
+		if ( $pin_saved ) : ?>
+			<div class="notice notice-success is-dismissible">
+				<p>Login PIN settings saved.</p>
+			</div>
+			<?php
+		endif; ?>
+
+		<?php
+
+		if ( $pin_error ) : ?>
+			<div class="notice notice-error is-dismissible">
+				<p>Invalid PIN. Must be 4–20 digits only.</p>
 			</div>
 			<?php
 		endif; ?>
@@ -597,6 +666,56 @@ function sswaf_settings_page() {
 				</div>
 
 				<?php submit_button( 'Save Settings' ); ?>
+			</form>
+		</div>
+
+		<br>
+
+		<!-- Login PIN -->
+		<div class="card" style="max-width:720px;">
+			<h2>Login PIN</h2>
+			<p>Adds a numeric PIN field to the login page. All login attempts with an incorrect PIN are blocked and rate limited — attackers cannot brute-force passwords without knowing the PIN.</p>
+			<form method="post">
+				<?php wp_nonce_field( 'sswaf_pin_action', 'sswaf_pin_nonce' ); ?>
+				<?php
+				$pin_enabled = get_option( 'sswaf_login_pin_enabled', false );
+				$pin_is_set  = ! empty( get_option( 'sswaf_login_pin', '' ) );
+				?>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">Enable Login PIN</th>
+						<td>
+							<label>
+								<input type="checkbox" name="sswaf_login_pin_enabled" id="sswaf-pin-toggle" value="1" <?php checked( $pin_enabled ); ?>>
+								Add PIN field to login page
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Current PIN</th>
+						<td>
+							<?php if ( $pin_is_set ) : ?>
+								<span style="color:#00a32a;">&#10003; PIN is set</span>
+							<?php else : ?>
+								<span style="color:#72777c;">&#8212; No PIN set</span>
+							<?php endif; ?>
+						</td>
+					</tr>
+					<tr id="sswaf-pin-settings">
+						<th scope="row">New PIN</th>
+						<td>
+							<input type="password" name="sswaf_pin_new" id="sswaf_pin_new" value="" size="20" autocomplete="off" placeholder="Digits only, 4–20 characters" pattern="\d{4,20}">
+							<p class="description">Leave blank to keep the current PIN. Enter a new PIN (digits only) to change it.</p>
+						</td>
+					</tr>
+				</table>
+				<p>
+					<?php submit_button( 'Save Login PIN', 'primary', 'sswaf_save_pin', false ); ?>
+					<?php if ( $pin_is_set ) : ?>
+						&nbsp;
+						<?php submit_button( 'Remove PIN', 'delete', 'sswaf_remove_pin', false, array( 'onclick' => 'return confirm("Remove the login PIN?")' ) ); ?>
+					<?php endif; ?>
+				</p>
 			</form>
 		</div>
 
