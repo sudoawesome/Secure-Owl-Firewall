@@ -1011,7 +1011,7 @@ function sswaf_settings_page() {
 								// Highlight severity
 								$entry = preg_replace( '/\[severity:([12])\]/', '<span style="color:#dc3232;">[severity:$1]</span>', $entry );
 								$entry = preg_replace( '/\[severity:3\]/', '<span style="color:#dba617;">[severity:3]</span>', $entry );
-								$entry = preg_replace( '/\[severity:[45]\]/', '<span style="color:#72aee6;">[severity:$1]</span>', $entry );
+								$entry = preg_replace( '/\[severity:([45])\]/', '<span style="color:#72aee6;">[severity:$1]</span>', $entry );
 								echo wp_kses( $entry, $allowed_log_html ) . "\n";
 							}
 

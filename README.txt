@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -87,3 +87,6 @@ Key features:
 
 = 1.0.8 =
 * Added IP blacklist with CIDR/subnet support (IPv4 + IPv6).
+
+= 1.0.9 =
+* Fixed a small bug in log viewer.
