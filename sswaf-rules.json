@@ -756,22 +756,6 @@
       ]
     },
     {
-      "id": 1232,
-      "enabled": true,
-      "target": "REQUEST_URI",
-      "pattern": "\\{\\{[^}]*\\}\\}|#\\{[^}]+\\}",
-      "transformations": [
-        "urlDecode"
-      ],
-      "action": "block",
-      "severity": 2,
-      "message": "Template expression injection in URI (SSTI)",
-      "tags": [
-        "ssti",
-        "injection"
-      ]
-    },
-    {
       "id": 1233,
       "enabled": true,
       "target": "REQUEST_URI",
@@ -843,6 +827,60 @@
         "sqli",
         "dos",
         "oracle"
+      ]
+    },
+    {
+      "id": 1241,
+      "enabled": true,
+      "target": "REQUEST_URI",
+      "pattern": "\\bor\\(?(?:['\"][^'\"]+['\"]=['\"]|\\d+=\\d+)",
+      "transformations": [
+        "lowercase",
+        "urlDecode",
+        "removeWhitespace"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "SQL boolean tautology injection",
+      "tags": [
+        "sqli",
+        "tautology",
+        "boolean"
+      ]
+    },
+    {
+      "id": 1242,
+      "enabled": true,
+      "target": "REQUEST_URI",
+      "pattern": "\\b(?:elt|extractvalue|updatexml|exp)\\s*\\(",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "MySQL injection function (ELT/ExtractValue/UpdateXML/EXP)",
+      "tags": [
+        "sqli",
+        "mysql",
+        "extraction"
+      ]
+    },
+    {
+      "id": 1243,
+      "enabled": true,
+      "target": "REQUEST_URI",
+      "pattern": "%c[01]%[89ab][0-9a-f]",
+      "transformations": [
+        "lowercase"
+      ],
+      "action": "block",
+      "severity": 2,
+      "message": "Overlong UTF-8 encoding (evasion attempt)",
+      "tags": [
+        "evasion",
+        "utf8",
+        "overlong"
       ]
     },
     {
@@ -1814,22 +1852,6 @@
       ]
     },
     {
-      "id": 2330,
-      "enabled": true,
-      "target": "QUERY_STRING",
-      "pattern": "\\{\\{[^}]*\\}\\}|#\\{[^}]+\\}",
-      "transformations": [
-        "urlDecode"
-      ],
-      "action": "block",
-      "severity": 2,
-      "message": "Template expression injection in query string (SSTI)",
-      "tags": [
-        "ssti",
-        "injection"
-      ]
-    },
-    {
       "id": 2331,
       "enabled": true,
       "target": "QUERY_STRING",
@@ -1956,6 +1978,60 @@
         "sqli",
         "dos",
         "oracle"
+      ]
+    },
+    {
+      "id": 2338,
+      "enabled": true,
+      "target": "QUERY_STRING",
+      "pattern": "\\bor\\(?(?:['\"][^'\"]+['\"]=['\"]|\\d+=\\d+)",
+      "transformations": [
+        "lowercase",
+        "urlDecode",
+        "removeWhitespace"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "SQL boolean tautology injection in query string",
+      "tags": [
+        "sqli",
+        "tautology",
+        "boolean"
+      ]
+    },
+    {
+      "id": 2339,
+      "enabled": true,
+      "target": "QUERY_STRING",
+      "pattern": "\\b(?:elt|extractvalue|updatexml|exp)\\s*\\(",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "MySQL injection function in query string",
+      "tags": [
+        "sqli",
+        "mysql",
+        "extraction"
+      ]
+    },
+    {
+      "id": 2340,
+      "enabled": true,
+      "target": "QUERY_STRING",
+      "pattern": "%c[01]%[89ab][0-9a-f]",
+      "transformations": [
+        "lowercase"
+      ],
+      "action": "block",
+      "severity": 2,
+      "message": "Overlong UTF-8 encoding in query string",
+      "tags": [
+        "evasion",
+        "utf8",
+        "overlong"
       ]
     },
     {
@@ -2792,22 +2868,6 @@
       ]
     },
     {
-      "id": 5023,
-      "enabled": true,
-      "target": "POST",
-      "pattern": "\\{\\{[^}]*\\}\\}|#\\{[^}]+\\}",
-      "transformations": [
-        "urlDecode"
-      ],
-      "action": "block",
-      "severity": 2,
-      "message": "Template expression injection in POST data (SSTI)",
-      "tags": [
-        "ssti",
-        "injection"
-      ]
-    },
-    {
       "id": 5024,
       "enabled": true,
       "target": "POST",
@@ -2842,6 +2902,43 @@
       "tags": [
         "sqli",
         "dos"
+      ]
+    },
+    {
+      "id": 5026,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "\\bor\\(?(?:['\"][^'\"]+['\"]=['\"]|\\d+=\\d+)",
+      "transformations": [
+        "lowercase",
+        "urlDecode",
+        "removeWhitespace"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "SQL boolean tautology injection in POST",
+      "tags": [
+        "sqli",
+        "tautology",
+        "boolean"
+      ]
+    },
+    {
+      "id": 5027,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "\\b(?:elt|extractvalue|updatexml|exp)\\s*\\(",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "MySQL injection function in POST",
+      "tags": [
+        "sqli",
+        "mysql",
+        "extraction"
       ]
     }
   ]
