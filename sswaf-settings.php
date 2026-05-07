@@ -248,6 +248,9 @@ function sswaf_handle_pin_save() {
 	$hp_enabled = isset( $_POST['sswaf_honeypot_enabled'] );
 	update_option( 'sswaf_honeypot_enabled', $hp_enabled );
 
+	$speed_enabled = isset( $_POST['sswaf_speed_limit_enabled'] );
+	update_option( 'sswaf_speed_limit_enabled', $speed_enabled );
+
 	// Remove PIN if requested
 	if ( isset( $_POST['sswaf_remove_pin'] ) ) {
 		update_option( 'sswaf_login_pin', '' );
@@ -722,9 +725,10 @@ function sswaf_settings_page() {
 			<form method="post">
 				<?php wp_nonce_field( 'sswaf_pin_action', 'sswaf_pin_nonce' ); ?>
 				<?php
-				$hp_enabled  = get_option( 'sswaf_honeypot_enabled', false );
-				$pin_enabled = get_option( 'sswaf_login_pin_enabled', false );
-				$pin_is_set  = ! empty( get_option( 'sswaf_login_pin', '' ) );
+				$hp_enabled    = get_option( 'sswaf_honeypot_enabled', false );
+				$pin_enabled   = get_option( 'sswaf_login_pin_enabled', false );
+				$speed_enabled = get_option( 'sswaf_speed_limit_enabled', false );
+				$pin_is_set    = ! empty( get_option( 'sswaf_login_pin', '' ) );
 				?>
 				<table class="form-table" role="presentation">
 					<tr>
@@ -735,6 +739,16 @@ function sswaf_settings_page() {
 								Add hidden bait field to login form (blocks naive bots)
 							</label>
 							<p class="description">Zero friction for legitimate users — the field is invisible and auto-filled only by bots.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Speed limit</th>
+						<td>
+							<label>
+								<input type="checkbox" name="sswaf_speed_limit_enabled" value="1" <?php checked( $speed_enabled ); ?>>
+								Reject login submissions faster than 3 seconds (anti-bot)
+							</label>
+							<p class="description"><strong>Warning:</strong> This injects hidden timestamp fields into the default WordPress login form and rejects submissions where the fields are missing or the elapsed time is under 3 seconds. <strong>If you use a custom login form plugin (Theme My Login, LoginPress, Elementor login widgets, etc.) this will lock you out.</strong> Disable if your login form is not the default <code>wp-login.php</code>.</p>
 						</td>
 					</tr>
 					<tr>

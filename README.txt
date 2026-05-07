@@ -20,7 +20,7 @@ Key features:
 * Inspection targets — REQUEST_URI, QUERY_STRING, USER_AGENT, REFERER, COOKIE, and POST
 * MU-Plugin loader — runs before regular plugins for earliest protection
 * Rate limiting — optional transient-based IP and subnet banning
-* Login protection — PIN field and honeypot to block brute-force attacks
+* Login protection — PIN field, speed limit and honeypot to block brute-force attacks
 * IP whitelist — CIDR/subnet support for both IPv4 and IPv6
 * IP blacklist — CIDR/subnet support for both IPv4 and IPv6
 * Per-rule toggle — disable individual rules from the admin panel without editing files
@@ -93,3 +93,4 @@ Key features:
 
 = 1.1.0 =
 * Updated security rules.
+* Added a speed limit protection layer to the login page.

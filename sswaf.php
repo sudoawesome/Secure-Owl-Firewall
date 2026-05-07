@@ -52,6 +52,14 @@ if ( ! defined( 'SSWAF_MU_FILE' ) ) {
 	define( 'SSWAF_MU_FILE', WPMU_PLUGIN_DIR . '/sswaf-loader.php' );
 }
 
+if ( ! defined( 'SSWAF_SPEED_LIMIT_SECONDS' ) ) {
+	define( 'SSWAF_SPEED_LIMIT_SECONDS', 3 );
+}
+
+if ( ! defined( 'SSWAF_SPEED_LIMIT_MAX_AGE' ) ) {
+	define( 'SSWAF_SPEED_LIMIT_MAX_AGE', 600 );
+}
+
 // ── Transformation Functions ─────────────────────────────────────────────────
 function sswaf_t_lowercase( $input ) {
 	return function_exists( 'mb_strtolower' ) ? mb_strtolower( $input, 'UTF-8' ) : strtolower( $input );
@@ -1146,6 +1154,84 @@ function sswaf_login_honeypot_check( $user, $username, $password ) {
 	return $user;
 }
 
+// ── Login Speed Limit ────────────────────────────────────────────────────────
+add_action( 'login_form', 'sswaf_login_speed_form' );
+add_filter( 'authenticate', 'sswaf_login_speed_check', 29, 3 );
+
+function sswaf_speed_hmac( $t, $ip ) {
+	return hash_hmac( 'sha256', $t . '|' . $ip, wp_salt( 'nonce' ) );
+}
+
+function sswaf_login_speed_form() {
+	if ( ! get_option( 'sswaf_speed_limit_enabled' ) ) {
+		return;
+	}
+	$t   = time();
+	$ip  = sswaf_get_remote_addr();
+	$sig = sswaf_speed_hmac( $t, $ip );
+	echo '<input type="hidden" name="sswaf_t" value="' . esc_attr( (string) $t ) . '" />';
+	echo '<input type="hidden" name="sswaf_ts" value="' . esc_attr( $sig ) . '" />';
+}
+
+function sswaf_login_speed_check( $user, $username, $password ) {
+	if ( ! get_option( 'sswaf_speed_limit_enabled' ) ) {
+		return $user;
+	}
+	// Opt-out hook for custom login form integrations.
+	if ( apply_filters( 'sswaf_speed_limit_skip', false ) ) {
+		return $user;
+	}
+	// Only applies to standard login form — not REST API, XML-RPC, or application passwords.
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	if ( ! isset( $_POST['log'] ) && ! isset( $_POST['user_login'] ) ) {
+		return $user;
+	}
+
+	// Below this point: fail-closed. Any missing/invalid token rejects the login.
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	$t_raw   = isset( $_POST['sswaf_t'] )  ? sanitize_text_field( wp_unslash( $_POST['sswaf_t'] ) )  : '';
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- login nonce is verified by WordPress core
+	$sig_raw = isset( $_POST['sswaf_ts'] ) ? sanitize_text_field( wp_unslash( $_POST['sswaf_ts'] ) ) : '';
+
+	$reason = '';
+	if ( '' === $t_raw || '' === $sig_raw ) {
+		$reason = '(missing token)';
+	} elseif ( ! ctype_digit( $t_raw ) ) {
+		$reason = '(invalid token)';
+	} else {
+		$t        = (int) $t_raw;
+		$ip       = sswaf_get_remote_addr();
+		$expected = sswaf_speed_hmac( $t, $ip );
+		if ( ! hash_equals( $expected, $sig_raw ) ) {
+			$reason = '(invalid signature)';
+		} else {
+			$elapsed = time() - $t;
+			if ( $elapsed < 0 || $elapsed > SSWAF_SPEED_LIMIT_MAX_AGE ) {
+				$reason = '(expired: ' . $elapsed . 's)';
+			} elseif ( $elapsed < SSWAF_SPEED_LIMIT_SECONDS ) {
+				$reason = '(too fast: ' . $elapsed . 's)';
+			}
+		}
+	}
+
+	if ( '' !== $reason ) {
+		$remote_addr = sswaf_get_remote_addr();
+		$pseudo_rule = array(
+			'id'       => 9003,
+			'severity' => 2,
+			'message'  => 'Login speed limit triggered',
+		);
+		sswaf_log( $pseudo_rule, $reason, 'LOGIN', $remote_addr );
+		sswaf_rate_limit_record( $remote_addr, $pseudo_rule );
+		return new WP_Error(
+			'incorrect_password',
+			// translators: Link to the lost-password page.
+			sprintf( __( '<strong>Error:</strong> The username or password you entered is incorrect. <a href="%s">Lost your password?</a>', 'secure-owl-firewall' ), esc_url( wp_lostpassword_url() ) )
+		);
+	}
+	return $user;
+}
+
 // ── MU-Plugin Loader Management ──────────────────────────────────────────────
 function sswaf_get_mu_loader_content() {
 
@@ -1219,11 +1305,12 @@ function sswaf_activate() {
 		add_option( 'sswaf_disabled_rules', array() );
 	}
 
-	// Login Security defaults (PIN + honeypot both disabled by default)
+	// Login Security defaults (PIN + honeypot + speed limit all disabled by default)
 	if ( get_option( 'sswaf_login_pin_enabled' ) === false ) {
 		add_option( 'sswaf_login_pin_enabled', false );
 		add_option( 'sswaf_login_pin', '' );
 		add_option( 'sswaf_honeypot_enabled', false );
+		add_option( 'sswaf_speed_limit_enabled', false );
 	}
 
 	// Rate limiting defaults (module off by default)
