@@ -8,8 +8,8 @@
 	Author URI: https://sajbersove.rs
 	Requires at least: 5.0
 	Tested up to: 6.9
-	Stable tag: 1.1.0
-	Version:    1.1.0
+	Stable tag: 1.1.1
+	Version:    1.1.1
 	Requires PHP: 7.4
 	Text Domain: secure-owl-firewall
 	License: GPLv2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 if ( ! defined( 'SSWAF_VERSION' ) ) {
-	define( 'SSWAF_VERSION', '1.1.0' );
+	define( 'SSWAF_VERSION', '1.1.1' );
 }
 
 if ( ! defined( 'SSWAF_FILE' ) ) {
@@ -940,8 +940,8 @@ function sswaf_core() {
 
 	// ── Long request check ───────────────────────────────────────────────
 	$block_long = isset( $settings['block_long_requests'] ) ? $settings['block_long_requests'] : true;
-	$max_req_length = isset( $settings['max_request_length'] ) ? (int) $settings['max_request_length'] : 1000;
-	$max_ref_length = isset( $settings['max_referrer_length'] ) ? (int) $settings['max_referrer_length'] : 1000;
+	$max_req_length = isset( $settings['max_request_length'] ) ? (int) $settings['max_request_length'] : 2000;
+	$max_ref_length = isset( $settings['max_referrer_length'] ) ? (int) $settings['max_referrer_length'] : 2000;
 
 	// phpcs:disable WordPress.Security.ValidatedSanitizedInput -- WAF inspects raw request data
 	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';

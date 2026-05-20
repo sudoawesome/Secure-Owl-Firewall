@@ -1,7 +1,7 @@
 {
   "settings": {
-    "max_request_length": 1000,
-    "max_referrer_length": 1000,
+    "max_request_length": 2000,
+    "max_referrer_length": 2000,
     "block_long_requests": true
   },
   "rules": [

@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -94,3 +94,6 @@ Key features:
 = 1.1.0 =
 * Updated security rules.
 * Added a speed limit protection layer to the login page.
+
+= 1.1.1 =
+* Updated security rules.
