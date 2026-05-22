@@ -7,9 +7,9 @@
 	Author: Sajber Sove
 	Author URI: https://sajbersove.rs
 	Requires at least: 5.0
-	Tested up to: 6.9
-	Stable tag: 1.1.1
-	Version:    1.1.1
+	Tested up to: 7.0
+	Stable tag: 2.0.0
+	Version:    2.0.0
 	Requires PHP: 7.4
 	Text Domain: secure-owl-firewall
 	License: GPLv2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 if ( ! defined( 'SSWAF_VERSION' ) ) {
-	define( 'SSWAF_VERSION', '1.1.1' );
+	define( 'SSWAF_VERSION', '2.0.0' );
 }
 
 if ( ! defined( 'SSWAF_FILE' ) ) {
@@ -58,6 +58,10 @@ if ( ! defined( 'SSWAF_SPEED_LIMIT_SECONDS' ) ) {
 
 if ( ! defined( 'SSWAF_SPEED_LIMIT_MAX_AGE' ) ) {
 	define( 'SSWAF_SPEED_LIMIT_MAX_AGE', 600 );
+}
+
+if ( ! defined( 'SSWAF_JSON_MAX_BODY' ) ) {
+	define( 'SSWAF_JSON_MAX_BODY', 256 * 1024 );
 }
 
 // ── Transformation Functions ─────────────────────────────────────────────────
@@ -884,6 +888,127 @@ function sswaf_get_remote_addr() {
 	return $remote_addr;
 }
 
+// ── JSON Body Reader ─────────────────────────────────────────────────────────
+function sswaf_should_scan_json() {
+	if ( ! apply_filters( 'sswaf_json_scanning', true ) ) {
+		return false;
+	}
+
+	// Only mutating methods carry JSON bodies in practice.
+	$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : '';
+	if ( ! in_array( $method, array( 'POST', 'PUT', 'PATCH' ), true ) ) {
+		return false;
+	}
+
+	// Content-Type must be a JSON media type. Accept variants like
+	// application/ld+json, application/vnd.api+json, application/graphql+json.
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- raw header inspection, intentional
+	$ctype = isset( $_SERVER['CONTENT_TYPE'] ) ? $_SERVER['CONTENT_TYPE'] : '';
+	if ( ! preg_match( '#^application/(?:[a-z+\-.]*\+)?json(?:;|$)#i', $ctype ) ) {
+		return false;
+	}
+
+	// Size guard — skip oversized bodies (fail-open).
+	$max  = (int) apply_filters( 'sswaf_json_max_body', SSWAF_JSON_MAX_BODY );
+	$clen = isset( $_SERVER['CONTENT_LENGTH'] ) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+	if ( $clen > 0 && $clen > $max ) {
+		return false;
+	}
+
+	// Note: capability-based skip is evaluated in sswaf_scan_json_body() at init,
+	// where WP auth is available. This function only validates environment.
+	return true;
+}
+
+function sswaf_get_json_body() {
+	$max  = (int) apply_filters( 'sswaf_json_max_body', SSWAF_JSON_MAX_BODY );
+	// phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown -- reading local request body, not remote URL
+	$body = file_get_contents( 'php://input', false, null, 0, $max + 1 );
+
+	if ( false === $body || '' === $body ) {
+		return null;
+	}
+	// Re-check actual length: if Content-Length was missing/lying and we read
+	// over the limit, refuse to parse (fail-open).
+	if ( strlen( $body ) > $max ) {
+		return null;
+	}
+
+	$data = json_decode( $body, true );
+	if ( null === $data && JSON_ERROR_NONE !== json_last_error() ) {
+		return null;
+	}
+	return $data;
+}
+
+// ── JSON Body Scanner (runs at init priority 0 for WP auth context) ─────────
+add_action( 'init', 'sswaf_scan_json_body', 0 );
+
+function sswaf_scan_json_body() {
+	// Honor existing POST scanning gate.
+	if ( ! apply_filters( 'sswaf_post_scanning', true ) ) {
+		return;
+	}
+	// Environment checks (method, content-type, size, sswaf_json_scanning filter).
+	if ( ! sswaf_should_scan_json() ) {
+		return;
+	}
+
+	// Privilege-based skip: anyone who can edit posts (Admin/Editor/Author/
+	// Contributor/Shop Manager/Super Admin and custom equivalents) gets a pass
+	// to avoid FPs on Gutenberg / page builder REST saves. Anonymous and
+	// low-privilege roles (Subscriber/Customer) still get scanned.
+	if ( apply_filters( 'sswaf_json_skip_authenticated', true ) ) {
+		$cap = apply_filters( 'sswaf_json_skip_capability', 'edit_posts' );
+		if ( $cap && is_user_logged_in() ) {
+			if ( is_super_admin() || current_user_can( $cap ) ) {
+				return;
+			}
+		}
+	}
+
+	$remote_addr = sswaf_get_remote_addr();
+	// Mirror sswaf_core(): whitelisted IPs bypass all scanning.
+	if ( sswaf_is_whitelisted( $remote_addr ) ) {
+		return;
+	}
+
+	$json_data = sswaf_get_json_body();
+	if ( ! is_array( $json_data ) ) {
+		return;
+	}
+	$json_values = sswaf_flatten_post( $json_data );
+	if ( empty( $json_values ) ) {
+		return;
+	}
+
+	$data  = sswaf_load_rules();
+	$rules = isset( $data['rules'] ) ? $data['rules'] : array();
+	if ( empty( $rules ) ) {
+		return;
+	}
+
+	foreach ( $rules as $rule ) {
+		if ( ! isset( $rule['target'] ) || 'POST' !== $rule['target'] ) {
+			continue;
+		}
+		$pattern = isset( $rule['pattern'] ) ? $rule['pattern'] : '';
+		if ( '' === $pattern ) {
+			continue;
+		}
+		$transforms = isset( $rule['transformations'] ) ? $rule['transformations'] : array();
+
+		foreach ( $json_values as $json_value ) {
+			$value = sswaf_apply_transforms( $json_value, $transforms );
+
+			$matches = array();
+			if ( @preg_match( '/' . $pattern . '/i', $value, $matches ) ) {
+				sswaf_block_request( $rule, $matches, 'POST', $remote_addr );
+			}
+		}
+	}
+}
+
 // ── Core Engine ──────────────────────────────────────────────────────────────
 function sswaf_core() {
 
@@ -1039,6 +1164,9 @@ function sswaf_core() {
 			}
 		}
 	}
+
+	// JSON body scanning runs separately at init priority 0 — see sswaf_scan_json_body().
+	// It needs WP auth context (current_user_can) which isn't initialized at muplugins_loaded.
 }
 
 // ── Core Hook (mu-plugin aware) ──────────────────────────────────────────────

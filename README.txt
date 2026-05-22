@@ -2,8 +2,8 @@
 Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
-Tested up to: 6.9
-Stable tag: 1.1.1
+Tested up to: 7.0
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -97,3 +97,7 @@ Key features:
 
 = 1.1.1 =
 * Updated security rules.
+
+= 2.0.0 =
+* Added JSON request body scanning.
+* Raised maximum request and referrer length limits.
