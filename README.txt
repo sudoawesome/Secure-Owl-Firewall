@@ -101,3 +101,6 @@ Key features:
 = 2.0.0 =
 * Added JSON request body scanning.
 * Raised maximum request and referrer length limits.
+
+= 2.0.1 =
+* Updated security rules.

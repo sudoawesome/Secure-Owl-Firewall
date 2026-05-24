@@ -1157,7 +1157,7 @@
       "id": 1500,
       "enabled": true,
       "target": "REQUEST_URI",
-      "pattern": "(?:%00|0x00|\\{0\\})",
+      "pattern": "%00",
       "transformations": [],
       "action": "block",
       "severity": 2,
@@ -2939,6 +2939,24 @@
         "sqli",
         "mysql",
         "extraction"
+      ]
+    },
+    {
+      "id": 5028,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "(?:0x00|\\{0\\})",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 3,
+      "message": "Null byte hex notation or format string in POST",
+      "tags": [
+        "probe",
+        "injection",
+        "sqli"
       ]
     }
   ]
