@@ -1232,6 +1232,23 @@
       ]
     },
     {
+      "id": 1506,
+      "enabled": true,
+      "target": "REQUEST_URI",
+      "pattern": "\\shttps?:\\/",
+      "transformations": [
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 3,
+      "message": "Embedded URL scheme in URI (srcset/redirect probe)",
+      "tags": [
+        "probe",
+        "evasion",
+        "ssrf"
+      ]
+    },
+    {
       "_comment": "=== REQUEST_URI: CMS-Specific (1600-1699) ==="
     },
     {
