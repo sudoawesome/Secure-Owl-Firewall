@@ -2317,7 +2317,7 @@
       "id": 4003,
       "enabled": true,
       "target": "REFERER",
-      "pattern": "(?:@unlink|assert\\(|print_r\\(|x00|xbshell|cocaine)",
+      "pattern": "(?:@unlink|assert\\(|print_r\\(|xbshell|cocaine)",
       "transformations": [
         "lowercase",
         "urlDecode"
