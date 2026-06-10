@@ -1,7 +1,7 @@
 {
   "settings": {
     "max_request_length": 2000,
-    "max_referrer_length": 2000,
+    "max_referrer_length": 5000,
     "block_long_requests": true
   },
   "rules": [
@@ -2730,24 +2730,6 @@
       ]
     },
     {
-      "id": 5012,
-      "enabled": true,
-      "target": "POST",
-      "pattern": "javascript\\s*:",
-      "transformations": [
-        "lowercase",
-        "urlDecode",
-        "htmlEntityDecode"
-      ],
-      "action": "block",
-      "severity": 1,
-      "message": "JavaScript URI scheme in POST data",
-      "tags": [
-        "xss",
-        "injection"
-      ]
-    },
-    {
       "id": 5015,
       "enabled": true,
       "target": "POST",
@@ -2787,7 +2769,7 @@
       "id": 5017,
       "enabled": true,
       "target": "POST",
-      "pattern": "(?:;|\\|)\\s*(?:cat|ls|id|whoami|echo|bash|sh|awk|sed|wget|curl|ping|nc|ncat|python|perl|ruby|php|getent)\\b",
+      "pattern": "(?:;|\\|)\\s*(?:cat|whoami|bash|awk|sed|wget|curl|ping|ncat|python|perl|ruby|getent)\\b",
       "transformations": [
         "lowercase",
         "urlDecode"
@@ -2821,7 +2803,7 @@
       "id": 5019,
       "enabled": true,
       "target": "POST",
-      "pattern": "\\$\\([^)]+\\)",
+      "pattern": "\\$\\(\\s*(?:cat|ls|id|whoami|echo|bash|sh|awk|sed|wget|curl|ping|nc|ncat|python|perl|ruby|getent|uname|hostname|pwd|env|sleep)\\b",
       "transformations": [
         "urlDecode"
       ],

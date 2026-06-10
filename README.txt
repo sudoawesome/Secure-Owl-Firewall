@@ -3,7 +3,7 @@ Contributors: sajbersove
 Tags: firewall, security, waf, protection
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 2.0.3
+Stable tag: 2.0.5
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -109,4 +109,10 @@ Key features:
 * Updated security rules.
 
 = 2.0.3 =
+* Updated security rules.
+
+= 2.0.4 =
+* Updated security rules.
+
+= 2.0.5 =
 * Updated security rules.
