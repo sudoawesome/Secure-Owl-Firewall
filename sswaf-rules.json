@@ -2487,7 +2487,7 @@
       "id": 6009,
       "enabled": true,
       "target": "COOKIE",
-      "pattern": "(?:%00|0x00|\\\\x00)",
+      "pattern": "%00",
       "transformations": [],
       "action": "block",
       "severity": 2,

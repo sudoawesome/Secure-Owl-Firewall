@@ -8,8 +8,8 @@
 	Author URI: https://sajbersove.rs
 	Requires at least: 5.0
 	Tested up to: 7.0
-	Stable tag: 2.0.5
-	Version:    2.0.5
+	Stable tag: 2.0.6
+	Version:    2.0.6
 	Requires PHP: 7.4
 	Text Domain: secure-owl-firewall
 	License: GPLv2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 if ( ! defined( 'SSWAF_VERSION' ) ) {
-	define( 'SSWAF_VERSION', '2.0.5' );
+	define( 'SSWAF_VERSION', '2.0.6' );
 }
 
 if ( ! defined( 'SSWAF_FILE' ) ) {
