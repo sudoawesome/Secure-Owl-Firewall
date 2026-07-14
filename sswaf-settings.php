@@ -721,7 +721,7 @@ function sswaf_settings_page() {
 		<!-- Login Security -->
 		<div class="card" style="max-width:720px;">
 			<h2>Login Security</h2>
-			<p>Two layers of login protection. Honeypot catches automated bots with zero friction for legitimate users. PIN blocks brute-force attempts even if credentials leak.</p>
+			<p>Three layers of login protection. Honeypot catches automated bots with zero friction for legitimate users. Speed limit rejects submissions faster than 3 seconds. PIN blocks brute-force attempts even if credentials leak.</p>
 			<form method="post">
 				<?php wp_nonce_field( 'sswaf_pin_action', 'sswaf_pin_nonce' ); ?>
 				<?php

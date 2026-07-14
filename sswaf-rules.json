@@ -2695,24 +2695,6 @@
       ]
     },
     {
-      "id": 5010,
-      "enabled": true,
-      "target": "POST",
-      "pattern": "(?:\\\"|')?\\s*(?:on(?:mouse(?:over|out|down|up|move|enter|leave)|click|dblclick|focus|blur|load|error|submit|reset|change|select|key(?:down|up|press)|touch(?:start|end|move)|animation(?:start|end|iteration)|transition(?:end|run|start)|wheel|scroll|resize|abort|unload|before(?:unload|print|toggle)|after(?:print)|drag(?:start|end|over|enter|leave|drop)?|input|invalid|play|pause|progress|search|toggle|waiting|pageshow|pointerenter|pointermove|pointerrawupdate|auxclick|afterscriptexecute|loadstart|start)\\s*=)",
-      "transformations": [
-        "lowercase",
-        "urlDecode"
-      ],
-      "action": "block",
-      "severity": 1,
-      "message": "HTML event handler injection in POST data",
-      "tags": [
-        "xss",
-        "injection",
-        "event-handler"
-      ]
-    },
-    {
       "id": 5011,
       "enabled": true,
       "target": "POST",
@@ -2956,6 +2938,60 @@
         "probe",
         "injection",
         "sqli"
+      ]
+    },
+    {
+      "id": 5029,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "data:\\s*text\\/html",
+      "transformations": [
+        "lowercase",
+        "urlDecode",
+        "htmlEntityDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "Data URI with text/html content in POST",
+      "tags": [
+        "xss",
+        "data-uri",
+        "injection"
+      ]
+    },
+    {
+      "id": 5030,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "\\/[a-z]{2,15}\\/\\.source\\b",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 2,
+      "message": "Regex source property string extraction in POST",
+      "tags": [
+        "xss",
+        "evasion"
+      ]
+    },
+    {
+      "id": 5031,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "\\[[^\\]]{1,80}\\]\\s*\\.\\s*(?:map|find|forEach|filter|some|every|reduce|findIndex)\\s*\\(\\s*(?:alert|confirm|prompt|eval|Function)\\b",
+      "transformations": [
+        "lowercase",
+        "urlDecode",
+        "htmlEntityDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "Array higher-order function with XSS callback in POST",
+      "tags": [
+        "xss",
+        "injection"
       ]
     }
   ]
