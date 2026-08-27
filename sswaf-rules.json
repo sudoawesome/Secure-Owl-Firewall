@@ -1042,6 +1042,25 @@
       ]
     },
     {
+      "id": 1304,
+      "enabled": true,
+      "target": "REQUEST_URI",
+      "pattern": "(?:phar|expect|glob|rar|ssh2(?:\\.[a-z]+)?|bzip2|ogg|zlib|zip|data):\\/\\/",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "Dangerous PHP wrapper scheme in URI",
+      "tags": [
+        "rfi",
+        "lfi",
+        "wrapper",
+        "rce"
+      ]
+    },
+    {
       "_comment": "=== REQUEST_URI: Malicious Patterns & Shells (1400-1499) ==="
     },
     {
@@ -2052,6 +2071,25 @@
       ]
     },
     {
+      "id": 2341,
+      "enabled": true,
+      "target": "QUERY_STRING",
+      "pattern": "(?:phar|expect|glob|rar|ssh2(?:\\.[a-z]+)?|bzip2|ogg|zlib|zip|data):\\/\\/",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "Dangerous PHP wrapper scheme in query string",
+      "tags": [
+        "rfi",
+        "lfi",
+        "wrapper",
+        "rce"
+      ]
+    },
+    {
       "id": 2325,
       "enabled": true,
       "target": "QUERY_STRING",
@@ -2640,6 +2678,43 @@
       ]
     },
     {
+      "id": 6106,
+      "enabled": true,
+      "target": "COOKIE",
+      "pattern": "[oc]:\\d+:\"[^\"]+\":\\d+:\\{",
+      "transformations": [
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "PHP serialized object injection in cookie",
+      "tags": [
+        "injection",
+        "deserialization",
+        "rce",
+        "php"
+      ]
+    },
+    {
+      "id": 6107,
+      "enabled": true,
+      "target": "COOKIE",
+      "pattern": "(?:phar|expect|glob|rar|ssh2(?:\\.[a-z]+)?|bzip2|ogg|zlib|zip|data):\\/\\/",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "Dangerous PHP wrapper scheme in cookie",
+      "tags": [
+        "rfi",
+        "lfi",
+        "wrapper",
+        "rce"
+      ]
+    },
+    {
       "_comment": "=== POST: XSS & Injection (5000-5099) ==="
     },
     {
@@ -2992,6 +3067,43 @@
       "tags": [
         "xss",
         "injection"
+      ]
+    },
+    {
+      "id": 5032,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "[oc]:\\d+:\"[^\"]+\":\\d+:\\{",
+      "transformations": [
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "PHP serialized object injection (POP-chain payload)",
+      "tags": [
+        "injection",
+        "deserialization",
+        "rce",
+        "php"
+      ]
+    },
+    {
+      "id": 5033,
+      "enabled": true,
+      "target": "POST",
+      "pattern": "(?:phar|expect|glob|rar|ssh2(?:\\.[a-z]+)?|bzip2|ogg|zlib|zip|data):\\/\\/",
+      "transformations": [
+        "lowercase",
+        "urlDecode"
+      ],
+      "action": "block",
+      "severity": 1,
+      "message": "Dangerous PHP wrapper scheme in POST",
+      "tags": [
+        "rfi",
+        "lfi",
+        "wrapper",
+        "rce"
       ]
     }
   ]
